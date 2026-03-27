@@ -3,13 +3,13 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from .builder import build_all
-from .constants import DEFAULT_BPM
+from .builder import build_all_house
+from .suite import build_all_suites
 
 
 def main() -> None:
     p = argparse.ArgumentParser(
-        description="Generate house/EDM MIDI inspired by Vivaldi's Four Seasons.",
+        description="Generate Vivaldi Four Seasons arrangements as MIDI (classical/modern suite by default).",
     )
     p.add_argument(
         "-o",
@@ -19,13 +19,21 @@ def main() -> None:
         help="Directory for .mid files (default: ./output)",
     )
     p.add_argument(
+        "--legacy-house",
+        action="store_true",
+        help="Emit short house/EDM loop sketches (*_house.mid) instead of the full orchestral suite.",
+    )
+    p.add_argument(
         "--bpm",
         type=float,
-        default=DEFAULT_BPM,
-        help=f"Tempo (default: {DEFAULT_BPM})",
+        default=124.0,
+        help="Tempo for --legacy-house only (default: 124).",
     )
     args = p.parse_args()
-    build_all(args.output, bpm=args.bpm)
+    if args.legacy_house:
+        build_all_house(args.output, bpm=args.bpm)
+    else:
+        build_all_suites(args.output)
 
 
 if __name__ == "__main__":

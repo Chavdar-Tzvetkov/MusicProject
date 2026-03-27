@@ -1,6 +1,8 @@
-# Four Seasons House (MIDI)
+# Four Seasons (MIDI)
 
-Python generates **house/EDM-style MIDI**: drums (General MIDI), bass, chord stabs, pad, **orchestral strings** (phased classical-style layers), and simplified seasonal lead hooks inspired by Vivaldi’s *Four Seasons* (public domain).
+Python builds **multi-movement MIDI suites** inspired by Vivaldi’s *The Four Seasons* (public domain): **three movements per season**, **per-movement tempos**, **orchestral layout** (violin solo, viola, cello, contrabass, string ensemble, harp), plus a **soft electric-piano bed** and **light modern drums** only in groovier movements — so it reads as **classical first**, with a contemporary pulse underneath, not a 1980s GM “game” loop.
+
+> **Note:** This is still **generated, condensed material** (phrase cells that repeat), not a full engraved score. For a convincing recording, open the MIDI in a **DAW** and replace GM sounds with orchestral libraries.
 
 ## Setup
 
@@ -8,38 +10,35 @@ Python generates **house/EDM-style MIDI**: drums (General MIDI), bass, chord sta
 pip install -e .
 ```
 
-(or `pip install -r requirements.txt` and run from the project root so `four_seasons_house` imports)
-
-## Build MIDI files
+## Build (default: full suite)
 
 ```bash
 python generate_midis.py
+# or: four-seasons-house
 ```
 
-or
+Outputs in `output/`:
+
+- `spring_suite.mid`, `summer_suite.mid`, `autumn_suite.mid`, `winter_suite.mid`
+- `four_seasons_suite.mid` — all seasons (~318 bars, tempo changes embedded)
+
+Tracks (General MIDI programs): **Violin solo (40)**, **Viola (41)**, **Cello (42)**, **Contrabass (43)**, **Slow strings (49)**, **Harp (46)**, **Electric Piano (4)** bed when drums are active, **drums** (`pulse` or `drive` per movement).
+
+## Legacy short house sketches
 
 ```bash
-four-seasons-house
+python -m four_seasons_house.cli --legacy-house --bpm 124
 ```
 
-Outputs go to `output/`:
-
-- `spring_house.mid`
-- `summer_house.mid`
-- `autumn_house.mid`
-- `winter_house.mid`
-- `four_seasons_house.mid` (full suite)
-
-Open in any DAW; assign drum kit, bass, piano/stack for stabs, pad, a **string ensemble** on the Strings track, and a lead synth.
-
-The MIDI also includes **General MIDI program changes** (bass / lead / stabs / pad), a **CC 74 cutoff sweep** on the lead (map to your synth’s filter if it uses a different CC), and **CC 11 expression dips** on the pad in sync with four-on-the-floor kicks for a sidechain-style pump.
+Writes `*_house.mid` and `four_seasons_house.mid` (original loop-style project).
 
 ## Options
 
 ```bash
-python -m four_seasons_house.cli --output ./out --bpm 126
+python -m four_seasons_house.cli --output ./out
+python -m four_seasons_house.cli --legacy-house --output ./out --bpm 126
 ```
 
-## Note
+## Listening
 
-Melodies are **short arrangements in the spirit** of each concerto, not literal transcriptions.
+**Winamp / Windows GS synth** will play it, but timbre stays basic. Use a **DAW** + orchestral samples for a result that matches what you hear in your head.

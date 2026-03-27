@@ -20,6 +20,34 @@ def bar_ticks(bars: float = 1) -> int:
     return int(TICKS_PER_BEAT * BEATS_PER_BAR * bars)
 
 
+def tile_note_events(
+    part: list[NoteEvent],
+    section_abs_start: int,
+    section_len_ticks: int,
+) -> list[NoteEvent]:
+    """Repeat a 0-based phrase along a section; trims overlapping the end."""
+    if not part or section_len_ticks <= 0:
+        return []
+    period = max(ne.start + ne.duration for ne in part)
+    if period <= 0:
+        period = TICKS_PER_BEAT * BEATS_PER_BAR
+    section_end = section_abs_start + section_len_ticks
+    out: list[NoteEvent] = []
+    offset = 0
+    while offset < section_len_ticks:
+        for ne in part:
+            s = section_abs_start + offset + ne.start
+            e = s + ne.duration
+            if s >= section_end:
+                break
+            if e > section_end:
+                e = section_end
+            if e - s > 12:
+                out.append(NoteEvent(s, e - s, ne.pitch, ne.velocity))
+        offset += period
+    return out
+
+
 def merge_to_deltas(events: Iterable[tuple[int, Message]]) -> list[Message]:
     """Sort by time; program/CC before notes; note_on before note_off (chord-safe)."""
 

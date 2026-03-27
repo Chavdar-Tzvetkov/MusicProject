@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "four-seasons-house"
-version = "0.4.0"
+version = "0.5.0"
 description = "House/EDM-style MIDI sketches inspired by Vivaldi's Four Seasons"
 readme = "README.md"
 requires-python = ">=3.10"

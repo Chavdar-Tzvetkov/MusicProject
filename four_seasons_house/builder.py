@@ -170,12 +170,12 @@ def compile_midi(
     return total_bars
 
 
-def build_all(
+def build_all_house(
     output_dir: Path | str,
     *,
-    bpm: float = DEFAULT_BPM,
+    bpm: float = 124.0,
 ) -> None:
-    """Write one MIDI per season plus the full suite."""
+    """Legacy house/EDM sketches (short loops, heavy groove)."""
     from .seasons import ALL_SEASONS
 
     output_dir = Path(output_dir)

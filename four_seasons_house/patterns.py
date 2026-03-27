@@ -39,6 +39,55 @@ def section_drums(start: int, bars: int) -> list[tuple[int, Message]]:
     return out
 
 
+def _drum_pair(t: int, note: int, vel: int) -> list[tuple[int, Message]]:
+    return [
+        (t, Message("note_on", channel=DRUM_CH, note=note, velocity=vel)),
+        (t + 14, Message("note_off", channel=DRUM_CH, note=note, velocity=0)),
+    ]
+
+
+def pulse_drums_bar(start_tick: int) -> list[tuple[int, Message]]:
+    """Light downbeats 1 + 3, brushed hats — modern without arcade four-on-the-floor."""
+    e: list[tuple[int, Message]] = []
+    beat = TICKS_PER_BEAT
+    step = beat // 2
+    kick, ch = 36, 42
+    for b in (0, 2):
+        e.extend(_drum_pair(start_tick + b * beat, kick, 44))
+    for i in range(8):
+        t = start_tick + i * step
+        e.extend(_drum_pair(t, ch, 26 + (6 if i % 2 else 0)))
+    return e
+
+
+def drive_drums_bar(start_tick: int) -> list[tuple[int, Message]]:
+    """Clearer pulse for storm / finale energy; still restrained velocities."""
+    e: list[tuple[int, Message]] = []
+    beat = TICKS_PER_BEAT
+    step = beat // 2
+    kick, ch, clap = 36, 42, 39
+    for b in range(4):
+        t0 = start_tick + b * beat
+        e.extend(_drum_pair(t0, kick, 62 if b % 2 == 0 else 54))
+        if b in (1, 3):
+            e.extend(_drum_pair(t0, clap, 48))
+    for i in range(8):
+        t = start_tick + i * step
+        e.extend(_drum_pair(t, ch, 34 + (10 if i % 2 else 0)))
+    return e
+
+
+def movement_drums(start: int, bars: int, mode: str) -> list[tuple[int, Message]]:
+    if mode not in ("pulse", "drive"):
+        return []
+    bar_len = BEATS_PER_BAR * TICKS_PER_BEAT
+    fn = pulse_drums_bar if mode == "pulse" else drive_drums_bar
+    out: list[tuple[int, Message]] = []
+    for b in range(bars):
+        out.extend(fn(start + b * bar_len))
+    return out
+
+
 def bass_pattern_for_section(
     start: int, bars: int, roots: list[int],
 ) -> list[NoteEvent]:
