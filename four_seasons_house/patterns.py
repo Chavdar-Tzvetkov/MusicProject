@@ -140,9 +140,10 @@ def suite_movement_drums(
     banger: bool = False,
     intro_orchestral_bars: int = 0,
     genz: bool = False,
+    acoustic: bool = False,
 ) -> list[tuple[int, Message]]:
     """Intro stays orchestral-light drums; after that optional banger kit."""
-    if mode not in ("pulse", "drive"):
+    if acoustic or mode not in ("pulse", "drive"):
         return []
     bar_len = BEATS_PER_BAR * TICKS_PER_BEAT
     out: list[tuple[int, Message]] = []

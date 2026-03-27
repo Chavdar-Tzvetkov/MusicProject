@@ -24,6 +24,8 @@ STEM_DEFINITIONS: list[tuple[str, tuple[str, ...]]] = [
     ("bassi_contrabass.mid", ("Contrabass",)),
     ("continuo.mid", ("Continuo harpsichord",)),
     ("harp.mid", ("Harp",)),
+    ("timpani.mid", ("Timpani",)),
+    ("flute.mid", ("Flute doubling",)),
     ("pads_modern.mid", ("New-age bed", "Modern bed (EP)")),
     ("pads_atmos.mid", ("Atmos pad",)),
     ("sparkle.mid", ("Celesta sparkle",)),

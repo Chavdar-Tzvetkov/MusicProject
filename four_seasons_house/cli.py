@@ -31,9 +31,10 @@ def main() -> None:
     )
     p.add_argument(
         "--vibe",
-        choices=("genz", "classic"),
-        default="genz",
-        help="Suite style: genz = new-age pads + celesta + trap-leaning drops (default). classic = earlier hybrid.",
+        choices=("acoustic", "genz", "classic"),
+        default="acoustic",
+        help="Suite style: acoustic = strings + harp + continuo + timpani + light flute/celesta, no synth or drum kit (default). "
+        "genz = new-age pads + celesta + trap-leaning drops. classic = earlier hybrid.",
     )
     p.add_argument(
         "--export-orchestral-stems",

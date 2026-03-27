@@ -46,3 +46,5 @@ GM_SUB_BASS_PROGRAM = 38  # Synth Bass 1 — map to 808 in your DAW
 GM_NEWAGE_PAD_PROGRAM = 88  # Pad 2 (new age) — streaming / lo-fi orchestral bed
 GM_CELESTA_PROGRAM = 8  # Bell-like sparkles
 GM_HARPSICHORD_PROGRAM = 6  # Basso continuo (Baroque band)
+GM_TIMPANI_PROGRAM = 47  # Melodic timpani (not drum kit)
+GM_FLUTE_PROGRAM = 73

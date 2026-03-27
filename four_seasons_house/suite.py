@@ -16,11 +16,13 @@ from .constants import (
     GM_CELLO_PROGRAM,
     GM_CONTRABASS_PROGRAM,
     GM_ENSEMBLE_PROGRAM,
+    GM_FLUTE_PROGRAM,
     GM_HARP_PROGRAM,
     GM_HARPSICHORD_PROGRAM,
     GM_MODERN_EP_PROGRAM,
     GM_NEWAGE_PAD_PROGRAM,
     GM_SUB_BASS_PROGRAM,
+    GM_TIMPANI_PROGRAM,
     GM_VIOLA_PROGRAM,
     GM_VIOLIN_PROGRAM,
     HARP_CH,
@@ -153,9 +155,13 @@ def _sparkle_celesta(
     harmony: tuple[tuple[int, int, int], ...],
     bar_len: int,
     beat: int,
+    *,
+    sparse: bool = False,
 ) -> None:
     s16 = beat // 4
     for bar in range(bars):
+        if sparse and bar % 3 != 0:
+            continue
         triad = harmony[bar % len(harmony)]
         r = triad[0]
         base = max(84, r + 31)
@@ -170,8 +176,64 @@ def _sparkle_celesta(
                 t0 + i * s16,
                 max(24, s16 - 10),
                 (p,),
-                60 - i * 10,
+                (48 - i * 8) if sparse else (60 - i * 10),
             )
+
+
+def _timpani_movement(
+    start: int,
+    bars: int,
+    roots: tuple[int, ...],
+    intro_orchestral_bars: int,
+    banger: bool,
+    drum_mode: str,
+    bar_len: int,
+) -> list[NoteEvent]:
+    if drum_mode == "none":
+        return []
+    beat = TICKS_PER_BEAT
+    out: list[NoteEvent] = []
+    for bar in range(bars):
+        r = roots[bar % len(roots)]
+        pitch = max(43, min(60, r))
+        t0 = start + bar * bar_len
+        in_intro = bar < intro_orchestral_bars
+        drop = banger and not in_intro
+        if in_intro:
+            out.append(NoteEvent(t0, beat - 52, pitch, 52))
+        else:
+            v1 = 76 if drop else 64
+            v2 = 56 if drop else 48
+            d1 = max(72, beat // 2 - 28)
+            out.append(NoteEvent(t0, d1, pitch, v1))
+            p2 = pitch - 1 if pitch > 44 else pitch
+            out.append(NoteEvent(t0 + 2 * beat, max(56, beat // 2 - 36), p2, v2))
+            if drop and drum_mode == "drive":
+                out.append(
+                    NoteEvent(t0 + beat + beat // 2, beat // 3, min(58, pitch + 3), v2 - 10)
+                )
+    return out
+
+
+def _acoustic_flute_doubling(
+    events: list[tuple[int, Message]],
+    start: int,
+    bars: int,
+    harmony: tuple[tuple[int, int, int], ...],
+    bar_len: int,
+    beat: int,
+) -> None:
+    for bar in range(bars):
+        if bar % 2:
+            continue
+        triad = harmony[bar % len(harmony)]
+        n = min(80, max(66, triad[2] + 12))
+        t_bar = start + bar * bar_len
+        hold = int(bar_len * 0.74)
+        add_chord_events(events, ATMOS_CH, t_bar + beat // 2, hold, (n,), 36)
+        if bar % 6 == 0:
+            n2 = min(84, triad[1] + 19)
+            add_chord_events(events, ATMOS_CH, t_bar + 2 * beat, max(beat, hold // 2), (n2,), 28)
 
 
 def _continuo_voicing(triad: tuple[int, int, int]) -> tuple[int, int, int]:
@@ -198,7 +260,7 @@ def _flatten_tempo_points(
     tempo_points: list[tuple[int, float]] = []
     cursor = 0
     total_bars = 0
-    hip = 0.96 if vibe == "genz" else 1.0
+    hip = 0.96 if vibe == "genz" else 1.0  # acoustic + classic use written tempo
     for season in seasons:
         for mov in season.movements:
             tempo_points.append((cursor, mov.bpm * hip))
@@ -212,17 +274,22 @@ def compile_suite_midi(
     seasons: Sequence[SeasonSuiteSpec],
     *,
     title: str,
-    vibe: str = "genz",
+    vibe: str = "acoustic",
 ) -> tuple[int, int]:
-    """vibe: genz = new-age pad + celesta + trap-influenced drops; classic = prior hybrid."""
-    if vibe not in ("genz", "classic"):
-        vibe = "genz"
+    """acoustic = natural orchestra only (strings, harp, continuo, timpani, sparse flute/celesta)."""
+    if vibe not in ("genz", "classic", "acoustic"):
+        vibe = "acoustic"
     path = Path(path)
     tempo_points, total_ticks, total_bars = _flatten_tempo_points(seasons, vibe)
     genz = vibe == "genz"
+    acoustic = vibe == "acoustic"
 
     mid = MidiFile(type=1, ticks_per_beat=TICKS_PER_BEAT)
-    disp = title + (" - GenZ new age" if genz else "")
+    disp = title + (
+        " - GenZ new age"
+        if genz
+        else (" - Acoustic orchestra" if acoustic else "")
+    )
     mid.tracks.append(_build_meta_track(disp, tempo_points))
 
     violin_t = MidiTrack()
@@ -239,26 +306,19 @@ def compile_suite_midi(
     harp_t.append(MetaMessage("track_name", name="Harp", time=0))
     continuo_t = MidiTrack()
     continuo_t.append(MetaMessage("track_name", name="Continuo harpsichord", time=0))
-    modern_t = MidiTrack()
-    bed_name = "New-age bed" if genz else "Modern bed (EP)"
-    modern_t.append(MetaMessage("track_name", name=bed_name, time=0))
-    ae: list[tuple[int, Message]] = []
-    se: list[tuple[int, Message]] = []
+
+    modern_t: MidiTrack | None = None
     atmos_t: MidiTrack | None = None
     sparkle_t: MidiTrack | None = None
-    if genz:
-        atmos_t = MidiTrack()
-        atmos_t.append(MetaMessage("track_name", name="Atmos pad", time=0))
-        sparkle_t = MidiTrack()
-        sparkle_t.append(MetaMessage("track_name", name="Celesta sparkle", time=0))
-        add_program_change(ae, ATMOS_CH, GM_NEWAGE_PAD_PROGRAM, 0)
-        add_program_change(se, SPARKLE_CH, GM_CELESTA_PROGRAM, 0)
+    flute_t: MidiTrack | None = None
+    timpani_t: MidiTrack | None = None
+    sub_t: MidiTrack | None = None
+    drums_t: MidiTrack | None = None
 
-    sub_t = MidiTrack()
-    sub_t.append(MetaMessage("track_name", name="Sub (map to 808)", time=0))
-    drums_t = MidiTrack()
-    drums_t.append(MetaMessage("track_name", name="Drums", time=0))
-
+    ae: list[tuple[int, Message]] = []
+    se: list[tuple[int, Message]] = []
+    fe: list[tuple[int, Message]] = []
+    tmp_e: list[tuple[int, Message]] = []
     ve: list[tuple[int, Message]] = []
     vae: list[tuple[int, Message]] = []
     ce: list[tuple[int, Message]] = []
@@ -270,6 +330,41 @@ def compile_suite_midi(
     sube: list[tuple[int, Message]] = []
     de: list[tuple[int, Message]] = []
 
+    if acoustic:
+        flute_t = MidiTrack()
+        flute_t.append(MetaMessage("track_name", name="Flute doubling", time=0))
+        sparkle_t = MidiTrack()
+        sparkle_t.append(MetaMessage("track_name", name="Celesta sparkle", time=0))
+        timpani_t = MidiTrack()
+        timpani_t.append(MetaMessage("track_name", name="Timpani", time=0))
+        add_program_change(fe, ATMOS_CH, GM_FLUTE_PROGRAM, 0)
+        add_program_change(se, SPARKLE_CH, GM_CELESTA_PROGRAM, 0)
+        add_program_change(tmp_e, MODERN_CH, GM_TIMPANI_PROGRAM, 0)
+    elif genz:
+        modern_t = MidiTrack()
+        modern_t.append(MetaMessage("track_name", name="New-age bed", time=0))
+        atmos_t = MidiTrack()
+        atmos_t.append(MetaMessage("track_name", name="Atmos pad", time=0))
+        sparkle_t = MidiTrack()
+        sparkle_t.append(MetaMessage("track_name", name="Celesta sparkle", time=0))
+        sub_t = MidiTrack()
+        sub_t.append(MetaMessage("track_name", name="Sub (map to 808)", time=0))
+        drums_t = MidiTrack()
+        drums_t.append(MetaMessage("track_name", name="Drums", time=0))
+        add_program_change(ae, ATMOS_CH, GM_NEWAGE_PAD_PROGRAM, 0)
+        add_program_change(se, SPARKLE_CH, GM_CELESTA_PROGRAM, 0)
+        add_program_change(me, MODERN_CH, GM_NEWAGE_PAD_PROGRAM, 0)
+        add_program_change(sube, SUB_CH, GM_SUB_BASS_PROGRAM, 0)
+    else:
+        modern_t = MidiTrack()
+        modern_t.append(MetaMessage("track_name", name="Modern bed (EP)", time=0))
+        sub_t = MidiTrack()
+        sub_t.append(MetaMessage("track_name", name="Sub (map to 808)", time=0))
+        drums_t = MidiTrack()
+        drums_t.append(MetaMessage("track_name", name="Drums", time=0))
+        add_program_change(me, MODERN_CH, GM_MODERN_EP_PROGRAM, 0)
+        add_program_change(sube, SUB_CH, GM_SUB_BASS_PROGRAM, 0)
+
     add_program_change(ve, VIOLIN_CH, GM_VIOLIN_PROGRAM, 0)
     add_program_change(vae, VIOLA_CH, GM_VIOLA_PROGRAM, 0)
     add_program_change(ce, CELLO_CH, GM_CELLO_PROGRAM, 0)
@@ -277,11 +372,12 @@ def compile_suite_midi(
     add_program_change(te, TUTTI_CH, GM_ENSEMBLE_PROGRAM, 0)
     add_program_change(he, HARP_CH, GM_HARP_PROGRAM, 0)
     add_program_change(qe, CONTINUO_CH, GM_HARPSICHORD_PROGRAM, 0)
-    modern_prog = GM_NEWAGE_PAD_PROGRAM if genz else GM_MODERN_EP_PROGRAM
-    add_program_change(me, MODERN_CH, modern_prog, 0)
-    add_program_change(sube, SUB_CH, GM_SUB_BASS_PROGRAM, 0)
 
-    spread_fn = _open_string_voicing_wide if genz else _open_string_voicing
+    spread_fn = (
+        _open_string_voicing
+        if acoustic
+        else (_open_string_voicing_wide if genz else _open_string_voicing)
+    )
     bar_len = BEATS_PER_BAR * TICKS_PER_BEAT
     beat = TICKS_PER_BEAT
     e8 = beat // 2
@@ -298,6 +394,7 @@ def compile_suite_midi(
                     banger=mov.banger,
                     intro_orchestral_bars=mov.intro_orchestral_bars,
                     genz=genz,
+                    acoustic=acoustic,
                 )
             )
             alt = mov.viol_alt
@@ -309,20 +406,37 @@ def compile_suite_midi(
             add_notes_to_events(ve, VIOLIN_CH, vnotes)
             add_notes_to_events(ce, CELLO_CH, _cello_bassline(cursor, mov.bars, mov.cello_roots))
             add_notes_to_events(cbe, CONTRABASS_CH, _contrabass_doubles(cursor, mov.bars, mov.cello_roots))
-            add_notes_to_events(
-                sube,
-                SUB_CH,
-                _sub_808_line(
-                    cursor,
-                    mov.bars,
-                    mov.cello_roots,
-                    mov.intro_orchestral_bars,
-                    mov.banger,
-                    mov.drum_mode,
-                    genz=genz,
-                ),
-            )
-            if genz:
+            if not acoustic:
+                add_notes_to_events(
+                    sube,
+                    SUB_CH,
+                    _sub_808_line(
+                        cursor,
+                        mov.bars,
+                        mov.cello_roots,
+                        mov.intro_orchestral_bars,
+                        mov.banger,
+                        mov.drum_mode,
+                        genz=genz,
+                    ),
+                )
+            if acoustic:
+                _acoustic_flute_doubling(fe, cursor, mov.bars, mov.harmony, bar_len, beat)
+                _sparkle_celesta(se, cursor, mov.bars, mov.harmony, bar_len, beat, sparse=True)
+                add_notes_to_events(
+                    tmp_e,
+                    MODERN_CH,
+                    _timpani_movement(
+                        cursor,
+                        mov.bars,
+                        mov.cello_roots,
+                        mov.intro_orchestral_bars,
+                        mov.banger,
+                        mov.drum_mode,
+                        bar_len,
+                    ),
+                )
+            elif genz:
                 _atmos_newage_wash(ae, cursor, mov.bars, mov.harmony, bar_len)
                 _sparkle_celesta(se, cursor, mov.bars, mov.harmony, bar_len, beat)
 
@@ -335,29 +449,45 @@ def compile_suite_midi(
                     and bar >= mov.intro_orchestral_bars
                     and mov.drum_mode != "none"
                 )
-                vel_t = (54 if drop else 43) if genz else (58 if drop else 45)
+                if acoustic:
+                    vel_t = 66 if drop else 50
+                    vv1 = 60 if drop else 54
+                elif genz:
+                    vel_t = 54 if drop else 43
+                    vv1 = 56 if drop else 50
+                else:
+                    vel_t = 58 if drop else 45
+                    vv1 = 60 if drop else 52
                 add_chord_events(te, TUTTI_CH, t_bar, bar_len - 28, spread, vel_t)
                 i1 = min(76, triad[1] + 12)
                 i2 = min(78, triad[2] + 12)
-                vv1 = (56 if drop else 50) if genz else (60 if drop else 52)
                 add_chord_events(vae, VIOLA_CH, t_bar, 2 * beat - 22, (i1,), vv1)
                 add_chord_events(vae, VIOLA_CH, t_bar + 2 * beat, 2 * beat - 22, (i2,), vv1 - 4)
                 a, b, c = triad
                 chips = [(a + 24), (b + 24), (c + 24), (b + 24), (c + 28), (a + 28)]
-                h_boost = 4 if genz else 0
+                if acoustic:
+                    h_boost = 3
+                    hv = (46 if drop else 38) + h_boost
+                else:
+                    h_boost = 4 if genz else 0
+                    hv = (40 if drop else 34) + h_boost
                 for i, p in enumerate(chips):
                     ht = t_bar + i * e8
                     if ht >= t_bar + bar_len:
                         break
-                    hv = (40 if drop else 34) + h_boost
-                    add_chord_events(he, HARP_CH, ht, e8 - 14, (min(90, p),), min(88, hv))
-                if mov.drum_mode != "none":
+                    add_chord_events(he, HARP_CH, ht, e8 - 14, (min(90, p),), min(90, hv))
+                if not acoustic and mov.drum_mode != "none":
                     v_ep = (32 if drop else 22) if genz else (36 if drop else 26)
                     voicing = _modern_hybrid_voicing(triad, genz)
                     hold = bar_len - (12 if genz else 24)
                     add_chord_events(me, MODERN_CH, t_bar, hold, voicing, v_ep)
                 cv = _continuo_voicing(triad)
-                if mov.drum_mode == "none":
+                if acoustic:
+                    if mov.drum_mode == "none":
+                        v_q = 52
+                    else:
+                        v_q = 48 if drop else 44
+                elif mov.drum_mode == "none":
                     v_q = 40 if genz else 44
                 else:
                     v_q = (18 if drop else 26) if genz else (22 if drop else 30)
@@ -372,12 +502,6 @@ def compile_suite_midi(
     tutti_t.extend(merge_to_deltas(te))
     harp_t.extend(merge_to_deltas(he))
     continuo_t.extend(merge_to_deltas(qe))
-    modern_t.extend(merge_to_deltas(me))
-    sub_t.extend(merge_to_deltas(sube))
-    drums_t.extend(merge_to_deltas(de))
-    if genz and atmos_t is not None and sparkle_t is not None:
-        atmos_t.extend(merge_to_deltas(ae))
-        sparkle_t.extend(merge_to_deltas(se))
 
     tracks_order: list[MidiTrack] = [
         violin_t,
@@ -387,20 +511,48 @@ def compile_suite_midi(
         tutti_t,
         harp_t,
         continuo_t,
-        modern_t,
     ]
-    if genz and atmos_t is not None and sparkle_t is not None:
-        tracks_order.extend([atmos_t, sparkle_t])
-    tracks_order.extend([sub_t, drums_t])
+    if acoustic:
+        if flute_t is not None:
+            flute_t.extend(merge_to_deltas(fe))
+        if sparkle_t is not None:
+            sparkle_t.extend(merge_to_deltas(se))
+        if timpani_t is not None:
+            timpani_t.extend(merge_to_deltas(tmp_e))
+        tracks_order.extend(
+            [t for t in (flute_t, sparkle_t, timpani_t) if t is not None]
+        )
+    else:
+        if modern_t is not None:
+            modern_t.extend(merge_to_deltas(me))
+            tracks_order.append(modern_t)
+        if genz and atmos_t is not None and sparkle_t is not None:
+            atmos_t.extend(merge_to_deltas(ae))
+            sparkle_t.extend(merge_to_deltas(se))
+            tracks_order.extend([atmos_t, sparkle_t])
+        if sub_t is not None:
+            sub_t.extend(merge_to_deltas(sube))
+        if drums_t is not None:
+            drums_t.extend(merge_to_deltas(de))
+        tracks_order.extend([t for t in (sub_t, drums_t) if t is not None])
+
     mid.tracks.extend(tracks_order)
     path.parent.mkdir(parents=True, exist_ok=True)
     mid.save(str(path))
     return total_bars, total_ticks
 
 
-def build_all_suites(output_dir: Path | str, *, vibe: str = "genz") -> None:
+_VIBE_TAGS = {
+    "acoustic": "acoustic orchestra",
+    "genz": "GenZ new-age",
+    "classic": "classic hybrid",
+}
+
+
+def build_all_suites(output_dir: Path | str, *, vibe: str = "acoustic") -> None:
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+    tag = _VIBE_TAGS.get(vibe, vibe)
 
     for season in ALL_SUITE_SEASONS:
         path = output_dir / f"{season.slug}_suite.mid"
@@ -410,7 +562,6 @@ def build_all_suites(output_dir: Path | str, *, vibe: str = "genz") -> None:
             title=f"{season.display_name} - suite",
             vibe=vibe,
         )
-        tag = "GenZ new-age" if vibe == "genz" else "classic hybrid"
         print(f"Wrote {path}  ({bars} bars, {tag})")
 
     full_path = output_dir / "four_seasons_suite.mid"
