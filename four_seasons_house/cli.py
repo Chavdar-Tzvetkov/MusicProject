@@ -35,11 +35,20 @@ def main() -> None:
         default="genz",
         help="Suite style: genz = new-age pads + celesta + trap-leaning drops (default). classic = earlier hybrid.",
     )
+    p.add_argument(
+        "--export-orchestral-stems",
+        action="store_true",
+        help="Split each *_suite.mid into separate stem MIDIs (channel 0 each; drums ch 9) under output/stems/<name>/. No DAW needed for basic FluidSynth-per-stem workflow.",
+    )
     args = p.parse_args()
     if args.legacy_house:
         build_all_house(args.output, bpm=args.bpm)
     else:
         build_all_suites(args.output, vibe=args.vibe)
+        if args.export_orchestral_stems:
+            from .stem_export import export_stems_for_output_folder
+
+            export_stems_for_output_folder(args.output)
 
 
 if __name__ == "__main__":

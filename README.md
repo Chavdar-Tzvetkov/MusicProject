@@ -4,6 +4,8 @@ Python builds **long-form, multi-movement MIDI** (~**224–276 bars per season**
 
 **v0.8:** **Continuo harpsichord** track (Baroque rhythm section), string ensemble on **GM 48** for better behaviour with sampled GM soundfonts, plus a **FluidSynth renderer** so you can hear **real .sf2 samples** instead of the Windows “toy” synth.
 
+**v0.9:** **`--export-orchestral-stems`** — splits each `*_suite.mid` into **separate stem MIDIs** (solo, ripieno viola/tutti, bassi, continuo, harp, pads, sparkle, sub, drums). Melodic stems use **MIDI channel 0**; drums use **channel 9**, so you can audition each layer in **FluidSynth** (or any simple player) **without a DAW**.
+
 **Default (`--vibe genz`):** Atmos (88), celesta (8), wider strings, new-age pad bed, genz drop drums. **`--vibe classic`:** EP bed, no atmos/celesta, heavier classic banger kit.
 
 > MIDI files are **not** audio — they are a map. The **art** you’re chasing lives in **performance + samples** (or **live strings**). This repo gives structure; your **soundfont / DAW** gives the “original” warmth.
@@ -39,6 +41,20 @@ python render_fluidsynth.py --sf2 "C:\path\to\your\soundfont.sf2"
 ```
 
 WAV files appear under `output/wav/`. That playback is **sample-based**, not Winamp’s built-in GM.
+
+4. **No DAW? Use orchestral stems + FluidSynth per part:**
+
+```bash
+python -m four_seasons_house.cli --export-orchestral-stems
+```
+
+This writes e.g. `output/stems/spring_suite/solo.mid`, `ripieno_tutti.mid`, `continuo.mid`, … (classic **genz** skips missing atmos/sparkle automatically). Render them all to WAV:
+
+```bash
+python render_fluidsynth.py --sf2 "C:\path\to\your\soundfont.sf2" --midi-dir output --recursive --out-dir output/wav_stems
+```
+
+You get one **.wav per stem**; listen in **VLC / foobar** or stitch later — still no producer software required.
 
 4. **Best possible quality:** import the same `.mid` into **Reaper / FL / Ableton** and load **Spitfire BBC SO Discover** (free tier when available), **VSCO 2**, **labs** strings, etc. — then mute or replace the GM “Sub” track with a real 808 if you want.
 

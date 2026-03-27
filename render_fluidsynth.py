@@ -33,7 +33,12 @@ def main() -> None:
         "--midi-dir",
         type=Path,
         default=Path("output"),
-        help="Folder containing .mid files (default: ./output)",
+        help="Folder containing .mid files (default: ./output). Use output/stems/spring_suite for one stem set.",
+    )
+    p.add_argument(
+        "--recursive",
+        action="store_true",
+        help="Also render every .mid under subfolders (e.g. output/stems/*/).",
     )
     p.add_argument(
         "--out-dir",
@@ -63,13 +68,18 @@ def main() -> None:
     args.out_dir = args.out_dir.resolve()
     args.out_dir.mkdir(parents=True, exist_ok=True)
 
-    mids = sorted(args.midi_dir.glob("*.mid"))
+    if args.recursive:
+        mids = sorted(args.midi_dir.rglob("*.mid"))
+    else:
+        mids = sorted(args.midi_dir.glob("*.mid"))
     if not mids:
         print(f"No .mid files in {args.midi_dir}", file=sys.stderr)
         sys.exit(1)
 
     for mid in mids:
-        wav = args.out_dir / f"{mid.stem}.wav"
+        rel = mid.relative_to(args.midi_dir) if mid.is_relative_to(args.midi_dir) else mid.name
+        wav = args.out_dir / rel.with_suffix(".wav")
+        wav.parent.mkdir(parents=True, exist_ok=True)
         cmd = [
             fs,
             "-ni",
