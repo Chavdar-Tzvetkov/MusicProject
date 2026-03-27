@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+
+# Packaging / install
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Generated MIDI (re-run Generate_MIDI_Files.bat or generate_midis.py)
+output/
+*.mid
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db

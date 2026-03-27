@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "four-seasons-house"
+version = "0.4.0"
+description = "House/EDM-style MIDI sketches inspired by Vivaldi's Four Seasons"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["mido>=1.3.2"]
+
+[project.scripts]
+four-seasons-house = "four_seasons_house.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["four_seasons_house*"]
