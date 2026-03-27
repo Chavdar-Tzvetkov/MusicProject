@@ -22,6 +22,7 @@ MODERN_CH = 6  # soft EP bed when groove is on
 SUB_CH = 7  # 808-style sub (GM) when banger / drop is active
 ATMOS_CH = 8  # wide new-age pad washes (GM)
 SPARKLE_CH = 10  # MIDI ch 11 — celesta / star tones
+CONTINUO_CH = 11  # MIDI ch 12 — baroque basso continuo (harpsichord)
 
 BEATS_PER_BAR = 4
 
@@ -37,9 +38,11 @@ GM_VIOLIN_PROGRAM = 40
 GM_VIOLA_PROGRAM = 41
 GM_CELLO_PROGRAM = 42
 GM_CONTRABASS_PROGRAM = 43
-GM_ENSEMBLE_PROGRAM = 49  # Slow Strings — less "FM game" than default ensemble
+# Ensemble 1: maps cleanly on most orchestral SF2s / General MIDI (prefer samples over FM synth)
+GM_ENSEMBLE_PROGRAM = 48
 GM_HARP_PROGRAM = 46
 GM_MODERN_EP_PROGRAM = 4  # Electric Piano 1 — subtle hybrid color
 GM_SUB_BASS_PROGRAM = 38  # Synth Bass 1 — map to 808 in your DAW
 GM_NEWAGE_PAD_PROGRAM = 88  # Pad 2 (new age) — streaming / lo-fi orchestral bed
 GM_CELESTA_PROGRAM = 8  # Bell-like sparkles
+GM_HARPSICHORD_PROGRAM = 6  # Basso continuo (Baroque band)

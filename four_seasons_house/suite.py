@@ -11,11 +11,13 @@ from .constants import (
     BEATS_PER_BAR,
     CELLO_CH,
     CONTRABASS_CH,
+    CONTINUO_CH,
     GM_CELESTA_PROGRAM,
     GM_CELLO_PROGRAM,
     GM_CONTRABASS_PROGRAM,
     GM_ENSEMBLE_PROGRAM,
     GM_HARP_PROGRAM,
+    GM_HARPSICHORD_PROGRAM,
     GM_MODERN_EP_PROGRAM,
     GM_NEWAGE_PAD_PROGRAM,
     GM_SUB_BASS_PROGRAM,
@@ -172,6 +174,15 @@ def _sparkle_celesta(
             )
 
 
+def _continuo_voicing(triad: tuple[int, int, int]) -> tuple[int, int, int]:
+    """Close-position continuo chunk in Baroque keyboard register (not too muddy)."""
+    a, b, c = triad
+    r0 = max(47, min(56, a))
+    r1 = max(52, min(60, b))
+    r2 = max(56, min(64, c))
+    return (r0, r1, r2)
+
+
 def _modern_hybrid_voicing(triad: tuple[int, int, int], genz: bool) -> tuple[int, ...]:
     base = tuple(min(74, n + 7) for n in triad)
     if genz:
@@ -226,6 +237,8 @@ def compile_suite_midi(
     tutti_t.append(MetaMessage("track_name", name="String ensemble", time=0))
     harp_t = MidiTrack()
     harp_t.append(MetaMessage("track_name", name="Harp", time=0))
+    continuo_t = MidiTrack()
+    continuo_t.append(MetaMessage("track_name", name="Continuo harpsichord", time=0))
     modern_t = MidiTrack()
     bed_name = "New-age bed" if genz else "Modern bed (EP)"
     modern_t.append(MetaMessage("track_name", name=bed_name, time=0))
@@ -252,6 +265,7 @@ def compile_suite_midi(
     cbe: list[tuple[int, Message]] = []
     te: list[tuple[int, Message]] = []
     he: list[tuple[int, Message]] = []
+    qe: list[tuple[int, Message]] = []
     me: list[tuple[int, Message]] = []
     sube: list[tuple[int, Message]] = []
     de: list[tuple[int, Message]] = []
@@ -262,6 +276,7 @@ def compile_suite_midi(
     add_program_change(cbe, CONTRABASS_CH, GM_CONTRABASS_PROGRAM, 0)
     add_program_change(te, TUTTI_CH, GM_ENSEMBLE_PROGRAM, 0)
     add_program_change(he, HARP_CH, GM_HARP_PROGRAM, 0)
+    add_program_change(qe, CONTINUO_CH, GM_HARPSICHORD_PROGRAM, 0)
     modern_prog = GM_NEWAGE_PAD_PROGRAM if genz else GM_MODERN_EP_PROGRAM
     add_program_change(me, MODERN_CH, modern_prog, 0)
     add_program_change(sube, SUB_CH, GM_SUB_BASS_PROGRAM, 0)
@@ -341,6 +356,12 @@ def compile_suite_midi(
                     voicing = _modern_hybrid_voicing(triad, genz)
                     hold = bar_len - (12 if genz else 24)
                     add_chord_events(me, MODERN_CH, t_bar, hold, voicing, v_ep)
+                cv = _continuo_voicing(triad)
+                if mov.drum_mode == "none":
+                    v_q = 40 if genz else 44
+                else:
+                    v_q = (18 if drop else 26) if genz else (22 if drop else 30)
+                add_chord_events(qe, CONTINUO_CH, t_bar, bar_len - 36, cv, v_q)
 
             cursor += section_len
 
@@ -350,6 +371,7 @@ def compile_suite_midi(
     cb_t.extend(merge_to_deltas(cbe))
     tutti_t.extend(merge_to_deltas(te))
     harp_t.extend(merge_to_deltas(he))
+    continuo_t.extend(merge_to_deltas(qe))
     modern_t.extend(merge_to_deltas(me))
     sub_t.extend(merge_to_deltas(sube))
     drums_t.extend(merge_to_deltas(de))
@@ -364,6 +386,7 @@ def compile_suite_midi(
         cb_t,
         tutti_t,
         harp_t,
+        continuo_t,
         modern_t,
     ]
     if genz and atmos_t is not None and sparkle_t is not None:

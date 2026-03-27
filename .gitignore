@@ -16,6 +16,7 @@ build/
 
 # Generated MIDI (re-run Generate_MIDI_Files.bat or generate_midis.py)
 output/
+output/wav/
 *.mid
 
 # IDE / OS
