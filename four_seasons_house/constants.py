@@ -19,6 +19,9 @@ CONTRABASS_CH = 3
 TUTTI_CH = 4  # string ensemble tutti (same role as legacy STRINGS_CH)
 HARP_CH = 5
 MODERN_CH = 6  # soft EP bed when groove is on
+SUB_CH = 7  # 808-style sub (GM) when banger / drop is active
+ATMOS_CH = 8  # wide new-age pad washes (GM)
+SPARKLE_CH = 10  # MIDI ch 11 — celesta / star tones
 
 BEATS_PER_BAR = 4
 
@@ -37,3 +40,6 @@ GM_CONTRABASS_PROGRAM = 43
 GM_ENSEMBLE_PROGRAM = 49  # Slow Strings — less "FM game" than default ensemble
 GM_HARP_PROGRAM = 46
 GM_MODERN_EP_PROGRAM = 4  # Electric Piano 1 — subtle hybrid color
+GM_SUB_BASS_PROGRAM = 38  # Synth Bass 1 — map to 808 in your DAW
+GM_NEWAGE_PAD_PROGRAM = 88  # Pad 2 (new age) — streaming / lo-fi orchestral bed
+GM_CELESTA_PROGRAM = 8  # Bell-like sparkles

@@ -29,11 +29,17 @@ def main() -> None:
         default=124.0,
         help="Tempo for --legacy-house only (default: 124).",
     )
+    p.add_argument(
+        "--vibe",
+        choices=("genz", "classic"),
+        default="genz",
+        help="Suite style: genz = new-age pads + celesta + trap-leaning drops (default). classic = earlier hybrid.",
+    )
     args = p.parse_args()
     if args.legacy_house:
         build_all_house(args.output, bpm=args.bpm)
     else:
-        build_all_suites(args.output)
+        build_all_suites(args.output, vibe=args.vibe)
 
 
 if __name__ == "__main__":

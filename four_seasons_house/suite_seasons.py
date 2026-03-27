@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable
 
+from .midi_util import NoteEvent
 from . import suite_notes as N
 
 
@@ -15,6 +16,9 @@ class MovementSpec:
     viol_part: Callable[[], list[NoteEvent]]
     harmony: tuple[tuple[int, int, int], ...]
     cello_roots: tuple[int, ...]
+    banger: bool = False
+    intro_orchestral_bars: int = 0
+    viol_alt: Callable[[], list[NoteEvent]] | None = None
 
 
 @dataclass(frozen=True)
@@ -30,7 +34,7 @@ SPRING_SUITE = SeasonSuiteSpec(
     movements=(
         MovementSpec(
             "I. Allegro",
-            36,
+            92,
             108.0,
             "pulse",
             N.spring_i_allegro,
@@ -43,11 +47,14 @@ SPRING_SUITE = SeasonSuiteSpec(
                 (52, 56, 59),
             ),
             (40, 47, 42, 39, 44, 40),
+            banger=True,
+            intro_orchestral_bars=16,
+            viol_alt=N.spring_i_allegro_b,
         ),
         MovementSpec(
             "II. Largo",
-            20,
-            52.0,
+            56,
+            50.0,
             "none",
             N.spring_ii_largo,
             (
@@ -57,11 +64,12 @@ SPRING_SUITE = SeasonSuiteSpec(
                 (46, 49, 53),
             ),
             (37, 39, 36, 34),
+            viol_alt=N.spring_ii_largo_b,
         ),
         MovementSpec(
             "III. Allegro pastorale",
-            28,
-            96.0,
+            76,
+            98.0,
             "pulse",
             N.spring_iii_allegro_pastorale,
             (
@@ -71,6 +79,9 @@ SPRING_SUITE = SeasonSuiteSpec(
                 (56, 59, 64),
             ),
             (40, 45, 42, 38, 43, 40),
+            banger=True,
+            intro_orchestral_bars=10,
+            viol_alt=N.spring_iii_allegro_pastorale_b,
         ),
     ),
 )
@@ -81,8 +92,8 @@ SUMMER_SUITE = SeasonSuiteSpec(
     movements=(
         MovementSpec(
             "I. Allegro non molto",
-            32,
-            84.0,
+            84,
+            86.0,
             "pulse",
             N.summer_i_allegro,
             (
@@ -93,11 +104,14 @@ SUMMER_SUITE = SeasonSuiteSpec(
                 (53, 56, 62),
             ),
             (43, 41, 38, 40, 36, 43),
+            banger=True,
+            intro_orchestral_bars=12,
+            viol_alt=N.summer_i_allegro_b,
         ),
         MovementSpec(
             "II. Adagio",
-            16,
-            58.0,
+            48,
+            56.0,
             "none",
             N.summer_ii_adagio,
             (
@@ -107,11 +121,12 @@ SUMMER_SUITE = SeasonSuiteSpec(
                 (48, 51, 55),
             ),
             (38, 41, 43, 36),
+            viol_alt=N.summer_ii_adagio_b,
         ),
         MovementSpec(
             "III. Presto",
-            28,
-            132.0,
+            100,
+            138.0,
             "drive",
             N.summer_iii_presto,
             (
@@ -121,6 +136,9 @@ SUMMER_SUITE = SeasonSuiteSpec(
                 (50, 53, 58),
             ),
             (43, 46, 41, 38, 43, 41),
+            banger=True,
+            intro_orchestral_bars=8,
+            viol_alt=N.summer_iii_presto_b,
         ),
     ),
 )
@@ -131,8 +149,8 @@ AUTUMN_SUITE = SeasonSuiteSpec(
     movements=(
         MovementSpec(
             "I. Allegro",
-            32,
-            100.0,
+            88,
+            102.0,
             "pulse",
             N.autumn_i_allegro,
             (
@@ -143,11 +161,14 @@ AUTUMN_SUITE = SeasonSuiteSpec(
                 (52, 55, 60),
             ),
             (41, 43, 38, 36, 40, 41),
+            banger=True,
+            intro_orchestral_bars=14,
+            viol_alt=N.autumn_i_allegro_b,
         ),
         MovementSpec(
             "II. Adagio molto",
-            18,
-            54.0,
+            48,
+            52.0,
             "none",
             N.autumn_ii_adagio,
             (
@@ -157,11 +178,12 @@ AUTUMN_SUITE = SeasonSuiteSpec(
                 (46, 50, 53),
             ),
             (36, 38, 33, 41),
+            viol_alt=N.autumn_ii_adagio_b,
         ),
         MovementSpec(
             "III. Allegro (The Hunt)",
-            30,
-            112.0,
+            92,
+            118.0,
             "drive",
             N.autumn_iii_allegro,
             (
@@ -171,6 +193,9 @@ AUTUMN_SUITE = SeasonSuiteSpec(
                 (48, 52, 55),
             ),
             (41, 36, 43, 38, 41, 39),
+            banger=True,
+            intro_orchestral_bars=8,
+            viol_alt=N.autumn_iii_allegro_b,
         ),
     ),
 )
@@ -181,8 +206,8 @@ WINTER_SUITE = SeasonSuiteSpec(
     movements=(
         MovementSpec(
             "I. Allegro non molto",
-            32,
-            80.0,
+            86,
+            82.0,
             "pulse",
             N.winter_i_allegro,
             (
@@ -193,11 +218,14 @@ WINTER_SUITE = SeasonSuiteSpec(
                 (50, 53, 56),
             ),
             (41, 39, 44, 36, 41, 43),
+            banger=True,
+            intro_orchestral_bars=12,
+            viol_alt=N.winter_i_allegro_b,
         ),
         MovementSpec(
             "II. Largo",
-            18,
-            48.0,
+            52,
+            46.0,
             "none",
             N.winter_ii_largo,
             (
@@ -207,11 +235,12 @@ WINTER_SUITE = SeasonSuiteSpec(
                 (48, 51, 55),
             ),
             (39, 37, 42, 34),
+            viol_alt=N.winter_ii_largo_b,
         ),
         MovementSpec(
             "III. Allegro",
-            28,
-            120.0,
+            84,
+            126.0,
             "drive",
             N.winter_iii_allegro,
             (
@@ -221,6 +250,9 @@ WINTER_SUITE = SeasonSuiteSpec(
                 (50, 53, 57),
             ),
             (41, 44, 39, 43, 41, 36),
+            banger=True,
+            intro_orchestral_bars=6,
+            viol_alt=N.winter_iii_allegro_b,
         ),
     ),
 )

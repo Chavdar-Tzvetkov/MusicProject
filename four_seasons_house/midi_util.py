@@ -48,6 +48,42 @@ def tile_note_events(
     return out
 
 
+def tile_alternating_note_events(
+    part_a: list[NoteEvent],
+    part_b: list[NoteEvent] | None,
+    section_abs_start: int,
+    section_len_ticks: int,
+) -> list[NoteEvent]:
+    """ABAB… phrase layout for longer sections without a single looping cell."""
+    if not part_b:
+        return tile_note_events(part_a, section_abs_start, section_len_ticks)
+
+    def span(part: list[NoteEvent]) -> int:
+        return max((n.start + n.duration for n in part), default=TICKS_PER_BEAT)
+
+    sa, sb = span(part_a), span(part_b)
+    cap = section_abs_start + section_len_ticks
+    out: list[NoteEvent] = []
+    pos = 0
+    use_a = True
+    while pos < section_len_ticks:
+        part = part_a if use_a else part_b
+        seg = sa if use_a else sb
+        base = section_abs_start + pos
+        for ne in part:
+            s = base + ne.start
+            if s >= cap:
+                continue
+            e = s + ne.duration
+            if e > cap:
+                e = cap
+            if e - s > 12:
+                out.append(NoteEvent(s, e - s, ne.pitch, ne.velocity))
+        pos += seg
+        use_a = not use_a
+    return out
+
+
 def merge_to_deltas(events: Iterable[tuple[int, Message]]) -> list[Message]:
     """Sort by time; program/CC before notes; note_on before note_off (chord-safe)."""
 

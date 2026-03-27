@@ -77,6 +77,50 @@ def drive_drums_bar(start_tick: int) -> list[tuple[int, Message]]:
     return e
 
 
+def banger_drums_bar(start_tick: int) -> list[tuple[int, Message]]:
+    """Four-on-the-floor + snare/clap + bright hats — club impact under strings."""
+    e: list[tuple[int, Message]] = []
+    beat = TICKS_PER_BEAT
+    step = beat // 2
+    kick, snare, clap, ch, oh = 36, 38, 39, 42, 46
+    for b in range(4):
+        t0 = start_tick + b * beat
+        e.extend(_drum_pair(t0, kick, 110 if b == 0 else 104))
+        if b in (1, 3):
+            e.extend(_drum_pair(t0, snare, 90))
+            e.extend(_drum_pair(t0 + 10, clap, 62))
+    for i in range(8):
+        t = start_tick + i * step
+        vel = 58 + (16 if i % 2 else 0)
+        e.extend(_drum_pair(t, oh if i % 2 else ch, min(127, vel)))
+    return e
+
+
+def genz_banger_drums_bar(start_tick: int) -> list[tuple[int, Message]]:
+    """YouTube-era remix pocket: weighted kicks, softer snare, trap 16th hats + end-of-bar lift."""
+    e: list[tuple[int, Message]] = []
+    beat = TICKS_PER_BEAT
+    s16 = beat // 4
+    kick, snare, clap, ch, oh, rim = 36, 38, 39, 42, 46, 37
+    accents = (118, 82, 112, 88)
+    for b in range(4):
+        t0 = start_tick + b * beat
+        e.extend(_drum_pair(t0, kick, accents[b]))
+        if b in (1, 3):
+            e.extend(_drum_pair(t0, snare, 72))
+            e.extend(_drum_pair(t0 + 11, clap, 48))
+    for b in (0, 2):
+        e.extend(_drum_pair(start_tick + b * beat + beat // 2, rim, 34))
+    for i in range(16):
+        t = start_tick + i * s16
+        roll = 12 if i >= 12 else 0
+        sw = i % 4 == 3
+        note = oh if sw else ch
+        vel = 34 + roll + (12 if i % 2 else 0)
+        e.extend(_drum_pair(t, note, min(121, vel)))
+    return e
+
+
 def movement_drums(start: int, bars: int, mode: str) -> list[tuple[int, Message]]:
     if mode not in ("pulse", "drive"):
         return []
@@ -85,6 +129,35 @@ def movement_drums(start: int, bars: int, mode: str) -> list[tuple[int, Message]
     out: list[tuple[int, Message]] = []
     for b in range(bars):
         out.extend(fn(start + b * bar_len))
+    return out
+
+
+def suite_movement_drums(
+    start: int,
+    bars: int,
+    mode: str,
+    *,
+    banger: bool = False,
+    intro_orchestral_bars: int = 0,
+    genz: bool = False,
+) -> list[tuple[int, Message]]:
+    """Intro stays orchestral-light drums; after that optional banger kit."""
+    if mode not in ("pulse", "drive"):
+        return []
+    bar_len = BEATS_PER_BAR * TICKS_PER_BEAT
+    out: list[tuple[int, Message]] = []
+    for b in range(bars):
+        tbar = start + b * bar_len
+        in_intro = b < intro_orchestral_bars
+        if in_intro:
+            fn = pulse_drums_bar if mode == "pulse" else drive_drums_bar
+        elif banger and genz:
+            fn = genz_banger_drums_bar
+        elif banger:
+            fn = banger_drums_bar
+        else:
+            fn = pulse_drums_bar if mode == "pulse" else drive_drums_bar
+        out.extend(fn(tbar))
     return out
 
 
@@ -155,6 +228,17 @@ def _open_string_voicing(triad: tuple[int, ...]) -> tuple[int, ...]:
     n3 = max(60, min(76, b + 12))
     n4 = max(64, min(86, c + 12))
     return tuple(sorted({n1, n2, n3, n4}))
+
+
+def _open_string_voicing_wide(triad: tuple[int, ...]) -> tuple[int, ...]:
+    """Extra width + high shimmer for cinematic / new-age stacks."""
+    a, b, c = triad[0], triad[1], triad[2]
+    n1 = max(45, min(54, a - 12))
+    n2 = max(55, min(67, a + 4))
+    n3 = max(60, min(76, b + 12))
+    n4 = max(64, min(88, c + 12))
+    n5 = min(90, c + 24)
+    return tuple(sorted({n1, n2, n3, n4, n5}))
 
 
 def strings_classical_layer_for_section(
